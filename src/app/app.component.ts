@@ -1,15 +1,21 @@
 import { element } from 'protractor';
 import { Component } from '@angular/core';
 import {} from 'apexcharts';
+import { HttpClient } from '@angular/common/http';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  private oFileIn;
 
-  constructor() {
+  constructor(http : HttpClient) {
+    for(let i = 1;i <= 2000000;i++){
+      http.get(`https://bugzilla.mozilla.org/rest/bug/${i}/history`).subscribe(data=>{
+        console.log(data);
+        this.ProcessExcel2(data);
+    })
+    }
 
   }
 fileUpload() {
@@ -204,22 +210,12 @@ fileUpload2() {
       }
 }
 ProcessExcel2(data) {
-  // Read the Excel File data.
-  // tslint:disable-next-line: prefer-const
-  let workbook = XLSX.read(data, {
-      type: 'binary'
-  });
 
-  // Fetch the name of First Sheet.
-  const firstSheet = workbook.SheetNames[0];
-
-  // Read all rows from First Sheet into an JSON array.
-  const excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[firstSheet]);
-  console.log(excelRows);
   google.charts.load('current', {packages: ['timeline']});
   google.charts.setOnLoadCallback(drawChart);
   function drawChart() {
-        const container = document.getElementById('timeline');
+        const container = document.createElement('div');
+        document.body.append(container);
         const chart = new google.visualization.Timeline(container);
         const dataTable = new google.visualization.DataTable();
         dataTable.addColumn({ type: 'string', id: 'Term' });
@@ -227,17 +223,21 @@ ProcessExcel2(data) {
         dataTable.addColumn({ type: 'date', id: 'Start' });
         dataTable.addColumn({ type: 'date', id: 'End' });
         const arr = [];
-        excelRows.forEach(element => {
-          if (element.What == 'Status') {
-            arr.push({who: element.Added, when: element.When});
-          }
+        data.bugs[0].history.forEach(element => {
+          element.changes.forEach(elementx => {
+            if (elementx.field_name == 'status') {
+              arr.push({who: element.who, when: element.when,status:elementx.added});
+            }
+          });
+
         });
+        console.log(arr);
         arr.forEach((ele, index) => {
           if (index != arr.length - 1 ) {
-            dataTable.addRow([index.toString(),ele.who,new Date(ele.when),new Date(arr[index+1]['when'])]);
+            dataTable.addRow([ele.status,ele.who,new Date(ele.when),new Date(arr[index+1]['when'])]);
           }
           else {
-            dataTable.addRow([index.toString(),ele.who,new Date(ele.when),new Date(ele.when)]);
+            dataTable.addRow([ele.status,ele.who,new Date(ele.when),new Date(ele.when)]);
           }
         });
 
