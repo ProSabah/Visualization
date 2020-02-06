@@ -10,7 +10,7 @@ import { HttpClient } from '@angular/common/http';
 export class AppComponent {
 
   constructor(http : HttpClient) {
-    for(let i = 1;i <= 2000000;i++){
+    for(let i = 1;i <= 100;i++){
       http.get(`https://bugzilla.mozilla.org/rest/bug/${i}/history`).subscribe(data=>{
         console.log(data);
         this.ProcessExcel2(data);
